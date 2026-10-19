@@ -1,24 +1,42 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { useEffect } from 'react';
 import 'react-native-reanimated';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+// Este componente hijo reacciona a los cambios en el token
+function RootLayoutNav() {
+  const { token, isLoadingSession } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+  useEffect(() => {
+    if (isLoadingSession) return; // Espera a que termine de leer AsyncStorage
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+    const inProtectedGroup = segments[0] === '(protected)';
+
+    if (!token && inProtectedGroup) {
+      // (public)/index.tsx es simplemente la raíz '/'
+      router.replace('/'); 
+    } else if (token && !inProtectedGroup) {
+      // (protected)/dashboard.tsx es simplemente '/dashboard'
+      // Le agregamos "as any" solo por si TypeScript no ha actualizado su tipado interno
+      router.replace('/dashboard' as any); 
+    }
+  }, [token, isLoadingSession, segments]);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name='(public)' />
+      <Stack.Screen name='(protected)' />
+    </Stack>
+  );
+}
+
+// Este es el layout principal
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootLayoutNav />
+    </AuthProvider>
   );
 }

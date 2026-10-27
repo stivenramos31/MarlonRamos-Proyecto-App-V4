@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { AdminProfile, DrawerItemOption } from "../models/drawer.models";
 
-export function useDrawer(){
+export function useDrawer() {
     const router = useRouter()
 
     const [profile] = useState<AdminProfile>({
@@ -13,10 +13,31 @@ export function useDrawer(){
     })
 
     const navigationOptions: DrawerItemOption[] = [
-        {name: "dashboard", label: "Dashboard", icon: "grid"},
-        {name: "orders", label: "Orders", icon: "package"},
-        {name: "inventory", label: "Inventory", icon: "archive"}
-    ]
+        { name: "dashboard", label: "Dashboard", icon: "grid" },
+        { name: "orders", label: "Orders", icon: "package" },
+        {
+            name: "inventory",
+            label: "Inventory",
+            icon: "archive",
+            subitems: [
+                {
+                    name: "inventory",
+                    label: "Categories",
+                    icon: "folder"
+                },
+                {
+                    name: "create-product",
+                    label: "Products",
+                    icon: "file-text"
+                },
+                {
+                    name: "create-service",
+                    label: "Servicios",
+                    icon: "service"
+                }
+            ]
+        }
+    ];
 
     return {
         profile,

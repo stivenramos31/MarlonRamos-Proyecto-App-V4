@@ -2,10 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { DrawerActions } from "@react-navigation/native";
 import { useNavigation, useRouter } from "expo-router";
 import Drawer from "expo-router/drawer";
-import { useMemo, useState } from "react";
-import { Dimensions, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Dimensions, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDrawer } from "../src/admin/viewmodels/use-drawer";
+import { CategoryService } from "../src/categories/services/category.service";
+import { useAuth } from "../src/context/AuthContext";
 
 const { width } = Dimensions.get('window')
 const CARD_WIDTH = (width - 44) / 2 //(Ancho total - margenes laterales )/2
@@ -19,7 +21,6 @@ interface Product {
   isNew?: boolean
   category: string
 }
-const CATEGORIES = ["All categories", "Electronics", "Fashions", "VideoGames"]
 const MOCK_PRODUCTS_LIST: Product[] = [
   {
     id: "1",
@@ -69,8 +70,28 @@ export default function DashboardScreen() {
   const navigation = useNavigation()
   const router = useRouter()
   const { profile } = useDrawer()
+  const { token } = useAuth()
   const [selectedCategory, setSelectedCategory] = useState("All Products")
-  const [searchQuery, setsearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [categories, setCategories] = useState<string[]>(["All categories"])
+  //const [selectedCategory, setSelectedCategory] = useState("All categories")
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false)
+  useEffect(() => {
+    const fetchCategories = async () => {
+      if (!token) return
+      setIsLoadingCategories(true)
+      try {
+        const data = await CategoryService.getCategories(token)
+        const categoryNames = Array.from(new Set(data.map((c) => c.name)))
+        setCategories(["All categories", ...categoryNames])
+      } catch (error) {
+        console.log("Error to get categories from screen", error)
+      } finally {
+        setIsLoadingCategories(false)
+      }
+    }
+    fetchCategories()
+  }, [token])
 
   const openMenu = () => {
     navigation.dispatch(DrawerActions.openDrawer())
@@ -114,40 +135,45 @@ export default function DashboardScreen() {
         <TextInput
           placeholder="Search products"
           value={searchQuery}
-          onChangeText={setsearchQuery}
+          onChangeText={setSearchQuery}
           style={styles.searchInput}
         />
       </View>
 
       {/**CATEGORIAS */}
       <View style={styles.categoriesWrapper}>
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={CATEGORIES}
-          keyExtractor={(item) => item}
-          contentContainerStyle={styles.categoriesList}
-          renderItem={({ item }) => {
-            const isSelected = item === selectedCategory
-            return (
-              <TouchableOpacity
-                onPress={() => setSelectedCategory(item)}
-                style={[
-                  styles.categoryItem,
-                  isSelected && styles.categoryItemSelected
-                ]}
-              >
-                <Text style={[
-                  styles.categoryText,
-                  isSelected && styles.categoryTextSelected
-                ]}>
-                  {item}
-                </Text>
-
-              </TouchableOpacity>
-            )
-          }}
-        />
+        {isLoadingCategories ? (
+          <ActivityIndicator color="#005C3A" size="small" />
+        ) : (
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={categories}
+            keyExtractor={(item) => item}
+            contentContainerStyle={styles.categoriesList}
+            renderItem={({ item }) => {
+              const isSelected = item === selectedCategory;
+              return (
+                <TouchableOpacity
+                  onPress={() => setSelectedCategory(item)}
+                  style={[
+                    styles.categoryItem,
+                    isSelected && styles.categoryItemSelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      isSelected && styles.categoryTextSelected,
+                    ]}
+                  >
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }}
+          />
+        )}
       </View>
 
       {/** PRODUCT CARD */}

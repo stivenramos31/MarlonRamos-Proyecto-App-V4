@@ -1,10 +1,61 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import Drawer from "expo-router/drawer";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CategoryService } from "../src/categories/services/category.service";
+import { useAuth } from "../src/context/AuthContext";
 
 export default function InventoryScreen() {
+    const router = useRouter();
+    const { token } = useAuth();
+    const [name, setName] = useState("");
+    const [description, setDescription] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSaveCategory = async () => {
+        if (!name.trim()) {
+            Alert.alert("Campo requerido", "Por favor ingrese el nombre de la categoría");
+            return;
+        }
+        if (!description.trim()) {
+            Alert.alert("Campo requerido", "Por favor ingrese la descripción");
+            return;
+        }
+        if (!token) {
+            Alert.alert("Error de sesión", "No se encontró el token");
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            const newCategory = await CategoryService.createCategory(name, description, token);
+            Alert.alert(
+                "¡Categoría Creada!",
+                `La categoría "${newCategory.name}" se guardó exitosamente`,
+                [
+                    {
+                        text: "Aceptar",
+                        onPress: () => {
+                            setName("");
+                            setDescription("");
+                            router.replace("/(protected)/dashboard" as any);
+                        }
+                    }
+                ]
+            );
+
+        } catch (error: any) {
+            Alert.alert("Error", error.message || "No se pudo guardar la categoría")
+        } finally {
+            setIsLoading(false)
+        }
+
+        console.log("Guardando categoría:", { name, description });
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <Drawer.Screen options={{ headerShown: false }} />
@@ -34,32 +85,53 @@ export default function InventoryScreen() {
                     <View style={styles.formCard}>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Nombre de la categoria</Text>
+                            <Text style={styles.inputLabel}>Nombre de la categoría</Text>
                             <TextInput
                                 placeholder="Ej. Dulceria"
                                 style={styles.textInput}
+                                value={name}
+                                onChangeText={setName}
+                                editable={!isLoading}
                             />
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Descripcion</Text>
+                            <Text style={styles.inputLabel}>Descripción</Text>
                             <TextInput
-                                placeholder="Describe los productos que engloban esta categoria"
+                                placeholder="Describe los productos que engloban esta categoría"
                                 multiline
-
+                                value={description}
+                                onChangeText={setDescription}
+                                editable={!isLoading}
                                 numberOfLines={5}
                                 textAlignVertical="top"
                                 style={styles.textAreaInput}
                             />
                         </View>
+
                         <TouchableOpacity
+                            onPress={handleSaveCategory}
+                            disabled={isLoading}
                             style={styles.btnSave}
                         >
-                            <Ionicons style={styles.checkIcon} name="checkmark-outline" size={22} color="#FFF" />
-                            <Text style={styles.btnSaveText}>Guardar Categoria</Text>
+                            {isLoading ? (
+                                <ActivityIndicator color="#FFF" size="small" />
+                            ) : (
+                                <>
+                                    <Ionicons
+                                        style={styles.checkIcon}
+                                        name="checkmark-outline"
+                                        size={22}
+                                        color="#FFF"
+                                    />
+                                    <Text style={styles.btnSaveText}>Guardar Categoría</Text>
+                                </>
+                            )}
                         </TouchableOpacity>
+
                         <TouchableOpacity
                             style={styles.btnCancel}
+                            onPress={() => router.replace("/(protected)/dashboard" as any)}
                         >
                             <Text style={styles.btnCancelText}>Cancelar</Text>
                         </TouchableOpacity>
@@ -67,8 +139,9 @@ export default function InventoryScreen() {
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
-    )
+    );
 }
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -177,4 +250,4 @@ const styles = StyleSheet.create({
         color: "#6B7280",
         fontWeight: "500"
     },
-})
+});

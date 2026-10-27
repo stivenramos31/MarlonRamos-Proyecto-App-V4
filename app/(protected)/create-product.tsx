@@ -1,8 +1,8 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Drawer from "expo-router/drawer";
-import { useState } from "react";
 import {
+    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -13,10 +13,32 @@ import {
     View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useCreateProduct } from "../src/products/viewmodels/use-create-product";
 
 export default function CreateProductScreen() {
-    const [description, setDescription] = useState("");
     const router = useRouter();
+    const {
+        name,
+        setName,
+        categoryId,
+        setCategoryId,
+        sku,
+        setSku,
+        description,
+        setDescription,
+        regularPrice,
+        setRegularPrice,
+        offerPrice,
+        setOfferPrice,
+        initialStock,
+        setInitialStock,
+        minStockAlert,
+        setMinStockAlert,
+        isLoadingProduct,
+        errorMessage,
+        submitProduct
+    } = useCreateProduct()
+
     return (
         <SafeAreaView style={styles.container}>
             <Drawer.Screen options={{ headerShown: false }} />
@@ -53,6 +75,8 @@ export default function CreateProductScreen() {
                             <TextInput
                                 placeholder="Ej. Zapato Nike"
                                 style={styles.textInput}
+                                value={name}
+                                onChangeText={setName}
                             />
                         </View>
 
@@ -78,6 +102,8 @@ export default function CreateProductScreen() {
                                 <TextInput
                                     placeholder="PR-7878787878787"
                                     style={styles.textInputScan}
+                                    value={sku}
+                                    onChangeText={setSku}
                                 />
                             </View>
                         </View>
@@ -124,6 +150,8 @@ export default function CreateProductScreen() {
                                         placeholder="0.0"
                                         keyboardType="numeric"
                                         style={styles.priceInput}
+                                        value={regularPrice}
+                                        onChangeText={setRegularPrice}
                                     />
                                 </View>
                             </View>
@@ -135,6 +163,8 @@ export default function CreateProductScreen() {
                                         placeholder="0.0"
                                         keyboardType="numeric"
                                         style={styles.priceInput}
+                                        value={offerPrice}
+                                        onChangeText={setOfferPrice}
                                     />
                                 </View>
                             </View>
@@ -149,6 +179,8 @@ export default function CreateProductScreen() {
                                         placeholder="0.0"
                                         keyboardType="numeric"
                                         style={styles.priceInput}
+                                        value={initialStock}
+                                        onChangeText={setInitialStock}
                                     />
                                 </View>
                             </View>
@@ -160,18 +192,25 @@ export default function CreateProductScreen() {
                                         placeholder="0.0"
                                         keyboardType="numeric"
                                         style={styles.priceInput}
+                                        value={minStockAlert}
+                                        onChangeText={setMinStockAlert}
                                     />
                                 </View>
                             </View>
                         </View>
-                        <TouchableOpacity style={styles.btnSave}>
-                            <Ionicons
-                                style={styles.checkIcon}
-                                name="checkmark-outline"
-                                size={22}
-                                color="#FFF"
-                            />
-                            <Text style={styles.btnSaveText}>Guardar Producto</Text>
+                        <TouchableOpacity
+                            style={styles.btnSave}
+                            onPress={submitProduct}
+                            disabled={isLoadingProduct}
+                        >
+                            {isLoadingProduct ? (
+                                <ActivityIndicator color="#FFF" size="small" />
+                            ) : (
+                                <>
+                                    <Ionicons style={styles.checkIcon} name="checkmark-outline" size={22} color="#FFF" />
+                                    <Text style={styles.btnSaveText}>Guardar Producto</Text>
+                                </>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </ScrollView>

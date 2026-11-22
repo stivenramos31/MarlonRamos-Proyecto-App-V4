@@ -1,5 +1,5 @@
-import { API_URL } from '@/api/ApiClient';
-import axios, { isAxiosError } from "axios";
+import { apiClient } from "@/api/ApiClient";
+import { isAxiosError } from "axios";
 import { CreateProductRequest, CreateProductResponse, ProductItem } from "../models/product.model";
 
 export const ProductService = {
@@ -9,14 +9,14 @@ export const ProductService = {
     ): Promise<CreateProductResponse> => {
         try {
             const authTokenHeader = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
-            const response = await axios.post<CreateProductResponse>(
-                `${API_URL}/products/create`,
+            const response = await apiClient.post<CreateProductResponse>(
+                "/products/create",
                 productRequest,
                 {
                     headers: {
                         Authorization: authTokenHeader,
-                        "Content-Type": "application/json"
-                    }
+                        "Content-Type": "application/json",
+                    },
                 }
             );
             return response.data;
@@ -35,12 +35,12 @@ export const ProductService = {
     ): Promise<ProductItem[]> => {
         try {
             const authTokenHeader = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
-            const response = await axios.get<ProductItem[]>(
-                `${API_URL}/products/category/${categoryId}`,
+            const response = await apiClient.get<ProductItem[]>(
+                `/products/category/${categoryId}`,
                 {
                     headers: {
-                        Authorization: authTokenHeader
-                    }
+                        Authorization: authTokenHeader,
+                    },
                 }
             );
             return response.data;
@@ -51,5 +51,5 @@ export const ProductService = {
             }
             throw new Error("Server error");
         }
-    }
+    },
 };

@@ -1,10 +1,9 @@
+import { setUnauthorizedHandler } from "@/api/ApiClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import { useRouter } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { UserResponse } from "../auth/models/auth.model";
 import { AuthService } from "../auth/services/auth.service";
-
 interface AuthContextType {
     token: string | null;
     user: UserResponse | null;
@@ -71,29 +70,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // INTERCEPTOR DE AXIOS PARA CERRAR SESION EN ERROR 401
     useEffect(() => {
-        const interceptor = axios.interceptors.response.use(
-            (response) => response,
-            async (error) => {
-                const requestUrl = error.config?.url || "";
-                const isAuthEndpoint =
-                    requestUrl.includes("/auth/login") ||
-                    requestUrl.includes("/auth/validate");
-
-                if (error.response?.status === 401 && !isAuthEndpoint) {
-                    console.log("Token expirado o inválido (401). Cerrando sesión...");
-                    await clearSession();
-                    router.replace("/(public)");
-                }
-
-                return Promise.reject(error);
-            }
-        );
-
-        return () => {
-            axios.interceptors.response.eject(interceptor);
-        };
-    }, [clearSession, router]);
-
+    setUnauthorizedHandler(clearSession);
+}, [clearSession]);
     // GUARDAR LA SESION
     const saveSession = async (newToken: string, newUser: UserResponse) => {
         try {

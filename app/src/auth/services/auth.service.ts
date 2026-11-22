@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import { AuthResponse, UserResponse } from "../models/auth.model";
 
 const API_URL = "https://api-ecommerce-5aby.onrender.com";
@@ -8,13 +8,12 @@ export const AuthService = {
     try {
       const response = await axios.post(`${API_URL}/auth/login`, {
         email,
-        password
+        password,
       });
 
-      // IMPORTANTE: Retorna directamente response.data
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
+      if (isAxiosError(error) && error.response) {
         throw new Error(error.response.data?.message || "Error to Login");
       }
       throw new Error("Server error");
@@ -34,14 +33,14 @@ export const AuthService = {
         lastname,
         phone,
         email,
-        password
+        password,
       });
 
       console.log("REGISTRO EXITOSO:", response.data);
       return response.data;
     } catch (error: any) {
       console.log("ERROR EN REGISTRO API:", error.response?.data || error.message);
-      if (axios.isAxiosError(error) && error.response) {
+      if (isAxiosError(error) && error.response) {
         throw new Error(error.response.data?.message || "Error al registrar usuario");
       }
       throw new Error("Error de conexión con el servidor");
@@ -55,29 +54,50 @@ export const AuthService = {
     phone: string,
     token: string
   ): Promise<UserResponse> => {
-    console.log("TOKEN", token);
     try {
-      const formData = new FormData()
-      formData.append("name", name)
-      formData.append("lastname", lastname)
-      formData.append("phone", phone)
+      const authTokenHeader = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("lastname", lastname);
+      formData.append("phone", phone);
 
       const response = await axios.put(`${API_URL}/users/upload/${userId}`, formData, {
         headers: {
-          "Authorization": token,
-        }
-      })
-      // console.log(response);
-      console.log("Datos del usuario:", response?.data?.email || response?.data?.userResponse?.email);
+          Authorization: authTokenHeader,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-      return response.data
+      console.log(
+        "Datos del usuario:",
+        response?.data?.email || response?.data?.userResponse?.email
+      );
+
+      return response.data;
     } catch (error: any) {
       console.log(error);
 
-      if (axios.isAxiosError(error) && error.response) {
-        throw new Error(error.response.data?.message || "Error to login")
+      if (isAxiosError(error) && error.response) {
+        throw new Error(error.response.data?.message || "Error to update user");
       }
-      throw new Error("Server error")
+      throw new Error("Server error");
     }
-  }
+  },
+
+  /** VALIDATE TOKEN */
+  validateToken: async (token: string): Promise<boolean> => {
+    try {
+      const header = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+      const { data } = await axios.get(`${API_URL}/auth/validate`, {
+        headers: { Authorization: header },
+        timeout: 10000,
+      });
+      return data.valid === true;
+    } catch (error) {
+      console.log(error);
+
+      if (isAxiosError(error) && error.response?.status === 401) return false;
+      throw error;
+    }
+  },
 };

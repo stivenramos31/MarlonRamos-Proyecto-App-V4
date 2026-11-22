@@ -68,7 +68,7 @@ export const AuthService = {
         }
       })
       // console.log(response);
-      console.log("Datos del usuario:", response.data.userResponse.email);
+      console.log("Datos del usuario:", response?.data?.email || response?.data?.userResponse?.email);
 
       return response.data
     } catch (error: any) {

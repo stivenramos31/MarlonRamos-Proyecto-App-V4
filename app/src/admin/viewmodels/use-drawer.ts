@@ -33,7 +33,7 @@ export function useDrawer() {
                 {
                     name: "create-service",
                     label: "Servicios",
-                    icon: "service"
+                    icon: "tool"
                 }
             ]
         }

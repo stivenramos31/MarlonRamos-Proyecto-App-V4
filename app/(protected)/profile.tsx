@@ -2,35 +2,47 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+    ActivityIndicator,
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthService } from "../src/auth/services/auth.service";
 import { useAuth } from "../src/context/AuthContext";
 
 export default function ProfileScreen() {
     const router = useRouter();
-    const { user, token, updateUserSession } = useAuth()
+    const { user, token, updateUserSession, isLoadingSession } = useAuth();
 
-    const [name, setName] = useState("")
-    const [lastname, setLastname] = useState("")
-    const [phone, setPhone] = useState("")
-    const [isUpdating, setIsUpdating] = useState(false)
+    const [name, setName] = useState("");
+    const [lastname, setLastname] = useState("");
+    const [phone, setPhone] = useState("");
+    const [isUpdating, setIsUpdating] = useState(false);
 
+    // Carga los datos cuando el usuario está disponible en el contexto
     useEffect(() => {
         if (user) {
-            setName(user.name || "")
-            setLastname(user.lastName || "")
-            setPhone(user.phone || "")
+            setName(user.name || "");
+            setLastname(user.lastName || "");
+            setPhone(user.phone || "");
         }
-    }, [user])
+    }, [user]);
 
     const handleUpdateUser = async () => {
         if (!name.trim() || !lastname.trim() || !phone.trim()) {
-            Alert.alert("Campos incompletos", "Por favor llenar los campos");
+            Alert.alert("Campos incompletos", "Por favor llenar todos los campos requeridos.");
             return;
         }
+
         if (!user?.id || !token) {
-            Alert.alert("Error de sesion", "No se encontro el usuario");
+            Alert.alert("Error de sesión", "No se encontró la sesión activa del usuario.");
             return;
         }
 
@@ -43,7 +55,7 @@ export default function ProfileScreen() {
                 phone,
                 token
             );
-            await updateUserSession(updateUser);
+            await updateUserSession(updateUser); // 👈 Pasa updateUser directo, sin .data
             Alert.alert(
                 "Excelente",
                 "Tu informacion ha sido actualizada con exito en el servidor"
@@ -54,6 +66,15 @@ export default function ProfileScreen() {
             setIsUpdating(false);
         }
     };
+
+    if (isLoadingSession) {
+        return (
+            <SafeAreaView style={[styles.container, styles.center]}>
+                <ActivityIndicator size="large" color="#005C3A" />
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <Drawer.Screen options={{ headerShown: false }} />
@@ -64,11 +85,11 @@ export default function ProfileScreen() {
                         if (router.canGoBack()) {
                             router.back();
                         } else {
-                            router.replace("/dashboard");
+                            router.replace("/(protected)/dashboard" as any);
                         }
                     }}
                 >
-                    <Ionicons name="arrow-back-outline" size={26} />
+                    <Ionicons name="arrow-back-outline" size={26} color="#111827" />
                 </TouchableOpacity>
                 <Text style={styles.logoText}>ShopEase</Text>
             </View>
@@ -77,10 +98,13 @@ export default function ProfileScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
+                {/* TARJETA DE PERFIL */}
                 <View style={styles.profileCard}>
                     <View style={styles.imageWrapper}>
                         <Image
-                            source={{ uri: "https://i.redd.it/l7luysouw2z41.jpg" }}
+                            source={{
+                                uri: user?.image || "https://i.redd.it/l7luysouw2z41.jpg",
+                            }}
                             style={styles.profileAvatar}
                         />
                         <TouchableOpacity style={styles.cameraBtn}>
@@ -89,28 +113,32 @@ export default function ProfileScreen() {
                     </View>
 
                     <Text style={styles.profileName}>
-                        {user ? `${user.name || ''} ${user.lastName || ''}` : "Marlon Stiven Ramos Vásquez"}
+                        {user?.name ? `${user.name} ${user?.lastName || ""}` : "Usuario"}
                     </Text>
-                    <Text style={styles.profileSubtitle}>Full Stack Developer</Text>
+                    <Text style={styles.profileSubtitle}>
+                        {user?.email || "Sin correo disponible"}
+                    </Text>
 
                     <View style={styles.cardPoints}>
                         <View style={[styles.cardPointBox, styles.cardOrderColor]}>
-                            <Text style={styles.cardBoxLabel}>Orders</Text>
+                            <Text style={styles.cardBoxLabel}>ORDERS</Text>
                             <Text style={styles.cardBoxValue}>24</Text>
                         </View>
                         <View style={[styles.cardPointBox, styles.cardPointsColor]}>
-                            <Text style={styles.cardBoxLabel}>Points</Text>
+                            <Text style={styles.cardBoxLabel}>POINTS</Text>
                             <Text style={styles.cardBoxValue}>1,250</Text>
                         </View>
                     </View>
-
                 </View>
+
+                {/* FORMULARIO */}
                 <View style={styles.sectionCard}>
                     <Text style={styles.personalHeader}>Personal Information</Text>
+
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>NAME</Text>
                         <View style={styles.inputWrapper}>
-                            <Ionicons style={styles.inputIcon} name="person-outline" size={20} />
+                            <Ionicons style={styles.inputIcon} name="person-outline" size={20} color="#6B7280" />
                             <TextInput
                                 placeholder="Full name"
                                 style={styles.input}
@@ -118,15 +146,14 @@ export default function ProfileScreen() {
                                 onChangeText={setName}
                             />
                         </View>
-
                     </View>
 
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>LAST NAME</Text>
                         <View style={styles.inputWrapper}>
-                            <Ionicons style={styles.inputIcon} name="person-outline" size={20} />
+                            <Ionicons style={styles.inputIcon} name="person-outline" size={20} color="#6B7280" />
                             <TextInput
-                                placeholder="Lastname"
+                                placeholder="Last name"
                                 style={styles.input}
                                 value={lastname}
                                 onChangeText={setLastname}
@@ -137,9 +164,9 @@ export default function ProfileScreen() {
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>PHONE NUMBER</Text>
                         <View style={styles.inputWrapper}>
-                            <Ionicons style={styles.inputIcon} name="call-outline" size={20} />
+                            <Ionicons style={styles.inputIcon} name="call-outline" size={20} color="#6B7280" />
                             <TextInput
-                                placeholder="Number"
+                                placeholder="Phone number"
                                 keyboardType="phone-pad"
                                 style={styles.input}
                                 value={phone}
@@ -147,8 +174,9 @@ export default function ProfileScreen() {
                             />
                         </View>
                     </View>
+
                     <TouchableOpacity
-                        style={styles.updateButton}
+                        style={[styles.updateButton, isUpdating && { opacity: 0.7 }]}
                         onPress={handleUpdateUser}
                         disabled={isUpdating}
                     >
@@ -168,31 +196,35 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
-        </SafeAreaView >
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#F3F4F6"
+        backgroundColor: "#F3F4F6",
+    },
+    center: {
+        justifyContent: "center",
+        alignItems: "center",
     },
     header: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 12,
+        paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: "#F3F4F6"
+        backgroundColor: "#F3F4F6",
     },
     logoText: {
         fontSize: 20,
         fontWeight: "bold",
-        color: "#005C3A"
+        color: "#005C3A",
     },
     scrollContent: {
         paddingHorizontal: 16,
-        paddingBottom: 40
+        paddingBottom: 40,
     },
     profileCard: {
         backgroundColor: "#FFF",
@@ -209,7 +241,7 @@ const styles = StyleSheet.create({
     },
     imageWrapper: {
         position: "relative",
-        marginBottom: 14
+        marginBottom: 14,
     },
     profileAvatar: {
         width: 100,
@@ -227,23 +259,23 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         borderRadius: 16,
         borderWidth: 2,
-        borderColor: "#FFF"
+        borderColor: "#FFF",
     },
     profileName: {
         fontSize: 20,
         fontWeight: "bold",
         color: "#111827",
-        marginBottom: 4
+        marginBottom: 4,
     },
     profileSubtitle: {
         fontSize: 13,
         color: "#6B7280",
-        marginBottom: 20
+        marginBottom: 20,
     },
     cardPoints: {
         flexDirection: "row",
         width: "100%",
-        justifyContent: "space-between"
+        justifyContent: "space-between",
     },
     cardPointBox: {
         flex: 1,
@@ -251,25 +283,25 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: "center",
         justifyContent: "center",
-        marginHorizontal: 6
+        marginHorizontal: 6,
     },
     cardOrderColor: {
-        backgroundColor: "#DBEAFE"
+        backgroundColor: "#DBEAFE",
     },
     cardPointsColor: {
-        backgroundColor: "#E2F0FC"
+        backgroundColor: "#E2F0FC",
     },
     cardBoxLabel: {
         fontSize: 10,
         fontWeight: "bold",
         color: "#4B5563",
         letterSpacing: 1,
-        marginBottom: 4
+        marginBottom: 4,
     },
     cardBoxValue: {
         fontSize: 20,
         fontWeight: "bold",
-        color: "#047857"
+        color: "#047857",
     },
     sectionCard: {
         backgroundColor: "#FFF",
@@ -280,23 +312,23 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.04,
         shadowRadius: 10,
-        elevation: 2
+        elevation: 2,
     },
     personalHeader: {
-        fontSize: 22,
+        fontSize: 18,
         fontWeight: "bold",
         color: "#111827",
-        marginBottom: 18
+        marginBottom: 18,
     },
     inputGroup: {
-        marginBottom: 14
+        marginBottom: 14,
     },
     inputLabel: {
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: "bold",
         color: "#4B5563",
         letterSpacing: 1,
-        marginBottom: 6
+        marginBottom: 6,
     },
     inputWrapper: {
         flexDirection: "row",
@@ -306,7 +338,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 12,
         height: 48,
-        backgroundColor: "#FFF"
+        backgroundColor: "#FFF",
     },
     input: {
         flex: 1,
@@ -324,6 +356,7 @@ const styles = StyleSheet.create({
         height: 48,
         alignItems: "center",
         justifyContent: "center",
+        marginTop: 8,
     },
     updateButtonText: {
         color: "#FFF",
